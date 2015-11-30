@@ -50,3 +50,21 @@ def download_file_from_url(url, file_path):
 
 def pretty_format(data):
     return json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
+
+# Given a IMDB ID return a list of dictionaries.
+# Each dictionary contains the IDSubtitleFile and the SubDownloadLink
+
+
+def get_subtitle_list(os_client, imdb_id):
+
+    # Search for subtitles: data is a list of dictionaries
+    data = os_client.search_subtitles_for_film(imdb_id, 'eng')
+    # Sort data by SubSumCD value
+    sorted_data = sorted(data, key=lambda k: k['SubSumCD'])
+    # Subtitles from the same CD-set have dame IDSubtitle but different IDSubtitleFile (sequential)
+    # Keep the IDSubtitle of the subtitle with lower SubSumCD
+    id_sub = sorted_data[0]['IDSubtitle']
+
+    # Create and fill the final list
+    return [{"IDSubtitleFile": dic['IDSubtitleFile'], "SubDownloadLink": dic['SubDownloadLink']}
+            for dic in sorted_data if dic['IDSubtitle'] == id_sub]

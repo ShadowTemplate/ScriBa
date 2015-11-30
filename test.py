@@ -1,18 +1,26 @@
 from opensubtitles import OpenSubtitles
 from imdb import *
+from utils import *
 
 os_client = OpenSubtitles()
 user_agent = 'ScriBa v1.0'
 imdb_id = '172495'
 # imdb_url = 'http://www.imdb.com/title/tt0172495'
-token = '3eafo1ijeob0bh8cou2f8s36p1'
+token = 'hvmr5f1g99engqihncqo6lb665'
 # token = os_client.login(user_agent=user_agent)
 os_client.set_token(token)
 print('Token: {0}\n'.format(token))
 
+# list of dictionaries. Each dictionary contains the IDSubtitleFile and the SubDownloadLink
+list_dict = get_subtitle_list(os_client, imdb_id)
+print(list_dict)
+id_list = [sub['IDSubtitleFile'] for sub in list_dict]
+print(id_list)
+print(pretty_format(os_client.download_subtitles(id_list)))
+
 # get IMDb details
-data = os_client.get_imdb_movie_details(imdb_id)
-print('Movie details: {0}\n'.format(data))
+# data = os_client.get_imdb_movie_details(imdb_id)
+# print('Movie details: {0}\n'.format(data))
 
 # search for subtitles
 # data = os_client.search_subtitles_for_film(imdb_id, 'eng')
