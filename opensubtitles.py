@@ -29,8 +29,13 @@ class OpenSubtitles(object):
         data = self.xmlrpc.NoOperation(self.token)
         return '200' in data.get('status')
 
-    def search_subtitles_for_film(self, imdb_id, language):
+    def search_subtitles_for_movie(self, imdb_id, language):
         data = self.xmlrpc.SearchSubtitles(self.token, [{'imdbid': imdb_id, 'sublanguageid': language}])
+        return _get_from_data_on_success_or_none(data, 'data')
+
+    def search_subtitles_for_movies(self, imdb_ids, language):
+        query_param = [{'imdbid': imdb_id, 'sublanguageid': language} for imdb_id in imdb_ids]
+        data = self.xmlrpc.SearchSubtitles(self.token, query_param)
         return _get_from_data_on_success_or_none(data, 'data')
 
     def download_subtitles(self, subs_ids):
