@@ -5,20 +5,14 @@ from utils import *
 
 
 # TODO mutualize constants like user agent
-# TODo assert number of links for subs = number of declared CD
-# TODO check no duplicate ids in matched.txt
 
-
-def main():
-    with open('partial_matched.txt', 'r') as matched_movies_file, \
-            open('partial_matched_subs.txt', 'w') as subs_list_file:
+def retrieve_subtitles_from_list(input_file, output_file):
+    with open(input_file, 'r') as matched_movies_file, open(output_file, 'w') as subs_list_file:
         user_agent = 'ScriBa v1.0'
         ids_per_request = 10
         lang = 'eng'
 
         os_client = OpenSubtitles()
-        # token = '97s6gdka2flisf3u4l17afvm31'
-        # os_client.set_token(token)
         token = os_client.login(user_agent=user_agent)
         print(token)
 
@@ -44,13 +38,18 @@ def main():
             print('Processed {0} lines (total: {1}). Subtitles found for {2} movies (total {3})\n'
                   .format(len(curr_request_ids), lines_processed, movies_found, movies_available))
 
+        os_client.logout()
+
 
 def find_matching_subs(os_client, subs_list_file, lang, curr_request_ids):
     print('Searching subtitles for id(s): {0}'.format(curr_request_ids))
     # data = os_client.search_subtitles_for_movies(curr_request_ids, lang)
 
-    data = [s for s in os_client.search_subtitles_for_movies(curr_request_ids, lang)
-            if s.get('IDMovieImdb') in [id.lstrip('0') for id in curr_request_ids]]
+    resp = os_client.search_subtitles_for_movies(curr_request_ids, lang)
+
+    # if one of the input imdb_id corresponds to a TV series, the response may contain useless entries (episodes subs)
+    # these subs can be easily detected (the imdb_id is in the attribute 'SeriesIMDBParent' instead of 'IDMovieImdb')
+    data = [s for s in resp if s.get('IDMovieImdb') in [i.lstrip('0') for i in curr_request_ids]]  # filter subs
 
     subs_by_movie = defaultdict(list)
     for movie in data:
@@ -69,6 +68,30 @@ def find_matching_subs(os_client, subs_list_file, lang, curr_request_ids):
         print('{0} {1} link(s)'.format(prefix, len(movie_subs)))
 
     return len(best_subs_by_movie)
+
+
+def dedupe_lines_by_imdb_id(input_file, output_file):
+    ids_map = {}
+    with open(input_file, 'r') as f:
+        for line in f:
+            entry_id = line.split(':')[1].rstrip('\r\n')
+            if ids_map.get(entry_id):
+                print('Found multiple lines for id {0}. They will be removed.'.format(entry_id))
+                ids_map.pop(entry_id)
+            else:
+                ids_map[entry_id] = line
+
+    with open(output_file, 'w') as clean_f:
+        for line in sorted(ids_map.values(), key=lambda item: (len(item), item)):  # length-wise sorting
+            clean_f.write(line)
+
+
+def main():
+    input_file = 'data/imdb/matched.txt'
+    cleaned_input_file = 'data/imdb/clean_matched.txt'
+    output_file = 'data/imdb/clean_matched_subs.txt'
+    dedupe_lines_by_imdb_id(input_file, cleaned_input_file)
+    retrieve_subtitles_from_list(cleaned_input_file, output_file)
 
 
 if __name__ == "__main__":

@@ -50,6 +50,7 @@ def download_file_from_url(url, file_path):
 # Each dictionary contains the IDSubtitleFile and the SubDownloadLink
 
 
+# TODO assert number of links for subs = number of declared CD
 def find_best_movie_subtitles(movie_subs):
     # Sort data by SubSumCD value
     sorted_data = sorted(movie_subs, key=lambda k: k['SubSumCD'])

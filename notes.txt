@@ -1,0 +1,12 @@
+Pre-processing step
+
+1. netflix id -> imdb id (via imdb search by movie)
+2. imdb id -> deduped imdb id
+3. deduped imdb id -> (subs ids, subs link(s))
+4. download [(subs ids, subs link(s))]
+5. deduped imdb id -> plot(s)/synopsis
+
+Processing step
+
+6. build features
+7. VSM
