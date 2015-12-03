@@ -62,10 +62,10 @@ def find_matching_subs(os_client, subs_list_file, lang, curr_request_ids):
     best_subs_by_movie = [find_best_movie_subtitles(available_subs) for available_subs in subs_by_movie.values()]
 
     for movie_subs in best_subs_by_movie:
-        prefix = '{0}:'.format(movie_subs[0].get('IDMovieImdb'))
-        body = ','.join(['{0}:{1}'.format(sub.get('IDSubtitleFile'), sub.get('SubDownloadLink')) for sub in movie_subs])
-        subs_list_file.write('{0}{1}\n'.format(prefix, body))
-        print('{0} {1} link(s)'.format(prefix, len(movie_subs)))
+        prefix = '{0}:{1}'.format(movie_subs[0].get('IDMovieImdb'), len(movie_subs))
+        body = '\n'.join(['{0}#{1}'.format(s.get('IDSubtitleFile'), s.get('SubDownloadLink')) for s in movie_subs])
+        subs_list_file.write('{0}\n{1}\n'.format(prefix, body))
+        print('{0} link(s)'.format(prefix, len(movie_subs)))
 
     return len(best_subs_by_movie)
 
@@ -85,11 +85,13 @@ def dedupe_lines_by_imdb_id(input_file, output_file):
         for line in sorted(ids_map.values(), key=lambda item: (len(item), item)):  # length-wise sorting
             clean_f.write(line)
 
+    print('All duplicated entries have been deleted.')
+
 
 def main():
     input_file = 'data/imdb/matched.txt'
     cleaned_input_file = 'data/imdb/clean_matched.txt'
-    output_file = 'data/imdb/clean_matched_subs.txt'
+    output_file = 'data/os/subs_list.txt'
     dedupe_lines_by_imdb_id(input_file, cleaned_input_file)
     retrieve_subtitles_from_list(cleaned_input_file, output_file)
 
