@@ -35,3 +35,27 @@ def get_synopsis(synopsis_url):
     soup = BeautifulSoup(req.content, 'html5lib')
     text_tags = soup.find('div', id='swiki.2.1').find_all(text=True)
     return '\n'.join([tag for tag in text_tags])
+
+
+def main(lines_to_skip):
+    with open('data/os/ids_list.txt', 'r') as f:
+
+        curr_line = remaining_lines_to_skip = lines_to_skip
+        for line in f:
+            if remaining_lines_to_skip > 0:
+                remaining_lines_to_skip -= 1
+                continue
+
+            curr_line += 1
+            movie_id = line.rstrip('\r\n')
+            print('Processing movie {0} at line {1}...'.format(movie_id, curr_line))
+            plot_summaries_text, synopsis_text = get_movie_info(movie_id)
+            print('Found: {0} plot(s), {1} synopsis/es'.format(len(plot_summaries_text), int(not not synopsis_text)))
+            with open('data/imdb/meta/{0}.txt'.format(movie_id), 'w') as meta_f:
+                meta_f.write('\n'.join(plot_summaries_text + [synopsis_text]))
+
+        print('Plots/synopses extraction completed.')
+
+
+if __name__ == '__main__':
+    main(4457)
