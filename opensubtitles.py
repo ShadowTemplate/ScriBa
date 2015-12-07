@@ -1,17 +1,16 @@
 from xmlrpc.client import ServerProxy
 
+import constants
+
 
 class OpenSubtitles(object):
-    ENDPOINT = 'http://api.opensubtitles.org/xml-rpc'
-    DEFAULT_LANGUAGE = 'eng'
-    DEFAULT_USER_AGENT = 'OSTestUserAgent'
-
     def __init__(self):
-        self.xmlrpc = ServerProxy(OpenSubtitles.ENDPOINT, allow_none=True)
+        self.xmlrpc = ServerProxy(constants.OS_ENDPOINT, allow_none=True)
         self.token = None
 
-    def login(self, username='', password_md5='', lang=DEFAULT_LANGUAGE, user_agent=DEFAULT_USER_AGENT):
-        assert (username and password_md5) or (user_agent and user_agent is not OpenSubtitles.DEFAULT_USER_AGENT)
+    def login(self, username='', password_md5='', lang=constants.OS_DEFAULT_LANGUAGE,
+              user_agent=constants.OS_DEFAULT_USER_AGENT):
+        assert (username and password_md5) or (user_agent and user_agent is not constants.OS_DEFAULT_USER_AGENT)
         data = self.xmlrpc.LogIn(username, password_md5, lang, user_agent)
         self.token = _get_from_data_on_success_or_none(data, 'token')
         return self.token

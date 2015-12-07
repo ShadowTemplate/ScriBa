@@ -1,8 +1,9 @@
-import hashlib
 from itertools import dropwhile
 import zlib
 import base64
 import urllib.request
+
+import constants
 
 from opensubtitles import OpenSubtitles
 
@@ -23,7 +24,7 @@ class ScriBa(metaclass=Singleton):
     def get_client():
         if not ScriBa.__os_client.is_connected():
             print('OpenSubtitles client disconnected. Logging in...')
-            print('Token: {0}'.format(ScriBa.__os_client.login(user_agent='ScriBa v1.0')))
+            print('Token: {0}'.format(ScriBa.__os_client.login(user_agent=constants.USER_AGENT)))
         return ScriBa.__os_client
 
 
@@ -33,10 +34,6 @@ def iterate_after_dropping(iterable, elements_to_drop):
 
 def get_sub_from_encoded_data(encoded_data):
     return decompress_gzip(base64.b64decode(encoded_data))
-
-
-def get_md5(file_path):
-    return hashlib.md5(open(file_path, 'rb').read()).hexdigest()  # memory inefficient, but ok for small files, like srt
 
 
 def download_file_from_url(url):

@@ -3,20 +3,20 @@ import os
 import requests
 from bs4 import BeautifulSoup
 
+import constants
 import utils
 
 
 def get_movie_info(imdb_id):
-    imdb_home_url = 'http://imdb.com'
-    movie_url = imdb_home_url + '/title/tt' + imdb_id
+    movie_url = constants.IMDB_HOME_URL + '/title/tt' + imdb_id
     req = requests.get(movie_url)
     if req.status_code != 200:
         raise RuntimeError('Invalid request to URL: ', movie_url)
     soup = BeautifulSoup(req.text, 'html.parser')
     plot_summaries = soup.find(lambda tag: tag.text == 'Plot Summary')
-    plot_summaries_text = get_plots(imdb_home_url + plot_summaries['href']) if plot_summaries else ''
+    plot_summaries_text = get_plots(constants.IMDB_HOME_URL + plot_summaries['href']) if plot_summaries else ''
     synopsis = soup.find(lambda tag: tag.text == 'Plot Synopsis')
-    synopsis_text = get_synopsis(imdb_home_url + synopsis['href']) if synopsis else ''
+    synopsis_text = get_synopsis(constants.IMDB_HOME_URL + synopsis['href']) if synopsis else ''
     return plot_summaries_text, synopsis_text
 
 
@@ -43,13 +43,13 @@ def extract_imdb_data_from_ids(ids_file, data_folder, lines_to_skip=0):
             print('Processing movie {0} at line {1}...'.format(movie_id, lines_to_skip))
             plot_summaries_text, synopsis_text = get_movie_info(movie_id)
             print('Found: {0} plot(s), {1} synopsis/es'.format(len(plot_summaries_text), int(bool(synopsis_text))))
-            with open(data_folder + movie_id + '2.txt', 'w') as meta_f:
+            with open(data_folder + movie_id + '.txt', 'w') as meta_f:
                 meta_f.write('\n'.join(plot_summaries_text + [synopsis_text]))
     print('Plots/synopses extraction completed.')
 
 
 def main():
-    extract_imdb_data_from_ids('data/os/ids_list.txt', 'data/imdb/test/')
+    extract_imdb_data_from_ids(constants.OS_IDS_LIST, constants.IMDB_PLOTS_SYNOPSES)
 
 
 if __name__ == '__main__':

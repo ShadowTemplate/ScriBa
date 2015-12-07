@@ -31,7 +31,7 @@ def find_matching_subs(os_client, request_ids, lang, subs_links_f, movies_with_s
     subs_by_movie = defaultdict(list)
     # if one of the input imdb_id corresponds to a TV series, the response may contain useless entries (episodes subs)
     # these subs can be easily detected (the imdb_id is in the attribute 'SeriesIMDBParent' instead of 'IDMovieImdb')
-    # data = [s for s in resp if s.get('IDMovieImdb') in [i.lstrip('0') for i in request_ids]]  # filter subs
+    # data = [s for s in resp if s.get('IDMovieImdb') in [i.lstrip('0') for i in request_ids]] TODO check below & remove
     stripped_ids = [i.lstrip('0') for i in request_ids]
     for movie in filter(lambda sub: sub.get('IDMovieImdb') in stripped_ids, resp):
         subs_by_movie[movie.get('IDMovieImdb')].append(movie)  # group subtitles by movie
@@ -69,9 +69,9 @@ def deduplicate_lines_by_id(ids_list_file, unique_ids_list_file):
 
 
 def main():
-    ids_list_file, unique_ids_list_file = 'data/imdb/matched_soft.txt', 'data/imdb/clean_matched.txt'
+    ids_list_file, unique_ids_list_file = constants.IMDB_MATCHED, constants.IMDB_UNIQUE_MATCHED
     deduplicate_lines_by_id(ids_list_file, unique_ids_list_file)
-    subs_links_file, movies_with_subs_list_file = 'data/os/subs_list.txt', 'data/os/ids_list.txt'
+    subs_links_file, movies_with_subs_list_file = constants.OS_SUBS_LIST, constants.OS_IDS_LIST
     find_subs_links_from_ids_list(unique_ids_list_file, subs_links_file, movies_with_subs_list_file)
 
 

@@ -3,18 +3,20 @@ import concurrent.futures
 import itertools
 import os
 
+import constants
 import utils
 
 
-def download_subs_from_list(subs_list, out_path, lines_to_skip=0, max_workers=10):
+def download_subs_from_list(subs_list_file, out_path, lines_to_skip=0, max_workers=10):
     links_by_movie, successes, errors = {}, {}, {}
-    with open(subs_list, 'r') as f:
-        for line in map(lambda l: l.rstrip('\r\n'), utils.iterate_after_dropping(f, lines_to_skip)):
+    with open(subs_list_file, 'r') as subs_list_f:
+        for line in map(lambda l: l.rstrip('\r\n'), utils.iterate_after_dropping(subs_list_f, lines_to_skip)):
             imdb_id, s_num = line.split(':')
-            links_iter = map(lambda _: f.readline().rstrip('\r\n').split('#')[1], itertools.repeat(None, int(s_num)))
-            links_by_movie[imdb_id] = [link for link in links_iter]
+            links_iter = map(lambda _: subs_list_f.readline().split('#')[1], itertools.repeat(None, int(s_num)))
+            links_by_movie[imdb_id] = [link.rstrip('\r\n') for link in links_iter]
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # build a dictionary of {future_job : imdb_id}
         jobs = {executor.submit(process_links, out_path + m_id, ls): m_id for m_id, ls in links_by_movie.items()}
         for future_job in concurrent.futures.as_completed(jobs.keys()):
             try:
@@ -38,7 +40,7 @@ def process_links(movie_folder, links):
 
 
 def main():
-    successes, errors = download_subs_from_list('data/os/subs_list_soft.txt', 'data/os/subs/', max_workers=14)
+    successes, errors = download_subs_from_list(constants.OS_SUBS_LIST, constants.OS_SUBS_PATH, max_workers=14)
     print('Successes:\n{0}\n\nErrors:\n{1}'.format(successes, errors))
 
 
