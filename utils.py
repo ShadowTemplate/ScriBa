@@ -51,14 +51,21 @@ def decompress_gzip(data):
 # Each dictionary contains the IDSubtitleFile and the SubDownloadLink
 
 
-# TODO assert number of links for subs = number of declared CDs
+# TODO assert number of links for subs = number of declared CD
 def find_best_movie_subtitles(movie_subs):
+    # filter list to keep just srt subtitles
+    filtered_list = [sub for sub in movie_subs if sub['SubFormat'] == 'srt']
     # Sort data by SubSumCD value
-    sorted_data = sorted(movie_subs, key=lambda k: k['SubSumCD'])
+    sorted_data = sorted(filtered_list, key=lambda k: k['SubSumCD'])
     # Subtitles from the same CD-set have dame IDSubtitle but different IDSubtitleFile (sequential)
     # Keep the IDSubtitle of the subtitle with lower SubSumCD
     best_sub_id = sorted_data[0]['IDSubtitle']
-
     # Create and fill the final list
-    return [{'IDSubtitleFile': sub['IDSubtitleFile'], 'SubDownloadLink': sub['SubDownloadLink'],
-             'IDMovieImdb': sub['IDMovieImdb']} for sub in sorted_data if sub['IDSubtitle'] == best_sub_id]
+    return_list = [{'IDSubtitleFile': sub['IDSubtitleFile'], 'SubDownloadLink': sub['SubDownloadLink'],
+                    'IDMovieImdb': sub['IDMovieImdb']} for sub in sorted_data
+                   if sub['IDSubtitle'] == best_sub_id]
+    if len(return_list) != int(sorted_data[0]['SubSumCD']):
+        print('error in subtitles_to_download list generation: incomplete subtitles')
+        return None
+    else:
+        return return_list
