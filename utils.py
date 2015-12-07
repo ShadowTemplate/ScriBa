@@ -62,8 +62,8 @@ def find_best_movie_subtitles(movie_subs):
     best_sub_id = sorted_data[0]['IDSubtitle']
     # Create and fill the final list
     return_list = [{'IDSubtitleFile': sub['IDSubtitleFile'], 'SubDownloadLink': sub['SubDownloadLink'],
-                    'IDMovieImdb': sub['IDMovieImdb']} for sub in sorted_data
-                   if sub['IDSubtitle'] == best_sub_id]
+             'IDMovieImdb': sub['IDMovieImdb']} for sub in sorted_data
+                  if sub['IDSubtitle'] == best_sub_id]
     if len(return_list) != int(sorted_data[0]['SubSumCD']):
         print('error in subtitles_to_download list generation: incomplete subtitles')
         return None
