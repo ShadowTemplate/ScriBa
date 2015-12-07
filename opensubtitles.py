@@ -25,7 +25,7 @@ class OpenSubtitles(object):
         data = self.xmlrpc.LogOut(self.token)
         return '200' in data.get('status')
 
-    def no_operation(self):
+    def is_connected(self):
         data = self.xmlrpc.NoOperation(self.token)
         return '200' in data.get('status')
 

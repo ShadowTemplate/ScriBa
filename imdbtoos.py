@@ -1,103 +1,78 @@
 from collections import defaultdict
 
-from opensubtitles import OpenSubtitles
 from utils import *
+import utils
 
 
-# TODO mutualize constants like user agent
+def find_subs_links_from_ids_list(source_file, subs_links_file, movies_with_subs_list_file, lines_to_skip=0,
+                                  ids_per_request=10, lang='eng', os_client=utils.ScriBa.get_client()):
+    with open(source_file, 'r') as source_f, open(subs_links_file, 'w') as subs_links_f, \
+            open(movies_with_subs_list_file, 'w') as movies_with_subs_list_f:
+        pending_ids = []
+        movies_found = 0
+        lines_iter = enumerate(map(lambda l: l.rstrip('\r\n'), utils.iterate_after_dropping(source_f, lines_to_skip)))
+        for count, imdb_id in map(lambda p: (p[0], p[1].split(',')[0]), lines_iter):
+            pending_ids.append(imdb_id)
+            if count and not count % ids_per_request:
+                movies_found += find_matching_subs(os_client, pending_ids, lang, subs_links_f, movies_with_subs_list_f)
+                lines_to_skip += ids_per_request
+                print('Processed {0} lines. Found subtitles for {1} movies\n'.format(lines_to_skip, movies_found))
+                pending_ids = []
 
-def retrieve_subtitles_from_list(input_file, output_file, ids_file):
-    with open(input_file, 'r') as matched_movies_file, \
-            open(output_file, 'w') as subs_list_file, open(ids_file, 'w') as ids_list_file:
-        user_agent = 'ScriBa v1.0'
-        ids_per_request = 10
-        lang = 'eng'
-
-        os_client = OpenSubtitles()
-        token = os_client.login(user_agent=user_agent)
-        print(token)
-
-        lines_processed = 0
-        movies_available = 0
-        curr_request_ids = []
-        for line in matched_movies_file:
-            imdb_id = line.split(':')[1].rstrip('\r\n')
-            curr_request_ids.append(imdb_id)
-
-            if len(curr_request_ids) == ids_per_request:
-                movies_found = find_matching_subs(os_client, subs_list_file, ids_list_file, lang, curr_request_ids)
-                movies_available += movies_found
-                lines_processed += ids_per_request
-                print('Processed {0} lines (total: {1}). Subtitles found for {2} movies (total {3})\n'
-                      .format(ids_per_request, lines_processed, movies_found, movies_available))
-                curr_request_ids = []
-
-        if len(curr_request_ids) > 0:
-            movies_found = find_matching_subs(os_client, subs_list_file, ids_list_file, lang, curr_request_ids)
-            movies_available += movies_found
-            lines_processed += len(curr_request_ids)
-            print('Processed {0} lines (total: {1}). Subtitles found for {2} movies (total {3})\n'
-                  .format(len(curr_request_ids), lines_processed, movies_found, movies_available))
-
-        os_client.logout()
+        if pending_ids:
+            movies_found += find_matching_subs(os_client, pending_ids, lang, subs_links_f, movies_with_subs_list_f)
+            lines_to_skip += len(pending_ids)
+            print('Processed {0} lines. Found subtitles for {1} movies\n'.format(lines_to_skip, movies_found))
 
 
-def find_matching_subs(os_client, subs_list_file, ids_list_file, lang, curr_request_ids):
-    print('Searching subtitles for id(s): {0}'.format(curr_request_ids))
-    # data = os_client.search_subtitles_for_movies(curr_request_ids, lang)
-
-    resp = os_client.search_subtitles_for_movies(curr_request_ids, lang)
-
+def find_matching_subs(os_client, request_ids, lang, subs_links_f, movies_with_subs_list_f):
+    print('Searching subtitles for id(s): {0}'.format(request_ids))
+    resp = os_client.search_subtitles_for_movies(request_ids, lang)
+    subs_by_movie = defaultdict(list)
     # if one of the input imdb_id corresponds to a TV series, the response may contain useless entries (episodes subs)
     # these subs can be easily detected (the imdb_id is in the attribute 'SeriesIMDBParent' instead of 'IDMovieImdb')
-    data = [s for s in resp if s.get('IDMovieImdb') in [i.lstrip('0') for i in curr_request_ids]]  # filter subs
-
-    subs_by_movie = defaultdict(list)
-    for movie in data:
+    # data = [s for s in resp if s.get('IDMovieImdb') in [i.lstrip('0') for i in request_ids]]  # filter subs
+    stripped_ids = [i.lstrip('0') for i in request_ids]
+    for movie in filter(lambda sub: sub.get('IDMovieImdb') in stripped_ids, resp):
         subs_by_movie[movie.get('IDMovieImdb')].append(movie)  # group subtitles by movie
 
     report = ', '.join(['\'{0}\': {1}'.format(k, len(v)) for k, v in subs_by_movie.items()])
-    print('Found {0} result(s): [{1}]'.format(len(data), report))
+    print('Found {0} result(s): [{1}]'.format(sum(list(map(lambda x: len(x), subs_by_movie.values()))), report))
 
     print('Going to search and store the best subs for each movie...')
     best_subs_by_movie = [find_best_movie_subtitles(available_subs) for available_subs in subs_by_movie.values()]
 
-    for movie_subs in best_subs_by_movie:
+    for movie_subs in filter(lambda subs: subs, best_subs_by_movie):  # filter out movies without subs
         movie_id = movie_subs[0].get('IDMovieImdb')
-        prefix = '{0}:{1}'.format(movie_id, len(movie_subs))
-        body = '\n'.join(['{0}#{1}'.format(s.get('IDSubtitleFile'), s.get('SubDownloadLink')) for s in movie_subs])
-        subs_list_file.write('{0}\n{1}\n'.format(prefix, body))
-        ids_list_file.write('{0}\n'.format(movie_id))
-        print('{0} link(s)'.format(prefix, len(movie_subs)))
-
+        movie_header = '{0}:{1}'.format(movie_id, len(movie_subs))
+        links = '\n'.join(['{0}#{1}'.format(s.get('IDSubtitleFile'), s.get('SubDownloadLink')) for s in movie_subs])
+        subs_links_f.write('{0}\n{1}\n'.format(movie_header, links))
+        movies_with_subs_list_f.write('{0}\n'.format(movie_id))
+        print('{0} link(s)'.format(movie_header, len(movie_subs)))
     return len(best_subs_by_movie)
 
 
-def dedupe_lines_by_imdb_id(input_file, output_file):
+def deduplicate_lines_by_id(ids_list_file, unique_ids_list_file):
     ids_map = {}
-    with open(input_file, 'r') as f:
-        for line in f:
-            entry_id = line.split(':')[1].rstrip('\r\n')
+    with open(ids_list_file, 'r') as ids_list_f:
+        for entry_id in map(lambda l: l.split(',')[0], ids_list_f):
             if ids_map.get(entry_id):
-                print('Found multiple lines for id {0}. They will be removed.'.format(entry_id))
-                ids_map.pop(entry_id)
+                ids_map[entry_id] += 1
             else:
-                ids_map[entry_id] = line
+                ids_map[entry_id] = 1
 
-    with open(output_file, 'w') as clean_f:
-        for line in sorted(ids_map.values(), key=lambda item: (len(item), item)):  # length-wise sorting
-            clean_f.write(line)
+    with open(unique_ids_list_file, 'w') as unique_ids_list_f:
+        unique_items = [imdb_id for imdb_id, occurrences in ids_map.items() if ids_map[imdb_id] == 1]
+        unique_ids_list_f.write('\n'.join(sorted(unique_items, key=lambda item: (len(item), item))))  # sort length-wise
 
-    print('All duplicated entries have been deleted.')
+    print('All duplicated entries have been deleted')
 
 
 def main():
-    input_file = 'data/imdb/matched.txt'
-    cleaned_input_file = 'data/imdb/clean_matched.txt'
-    dedupe_lines_by_imdb_id(input_file, cleaned_input_file)
-    output_file = 'data/os/subs_list.txt'
-    ids_file = 'data/os/ids_list.txt'
-    retrieve_subtitles_from_list(cleaned_input_file, output_file, ids_file)
+    ids_list_file, unique_ids_list_file = 'data/imdb/matched_soft.txt', 'data/imdb/clean_matched.txt'
+    deduplicate_lines_by_id(ids_list_file, unique_ids_list_file)
+    subs_links_file, movies_with_subs_list_file = 'data/os/subs_list.txt', 'data/os/ids_list.txt'
+    find_subs_links_from_ids_list(unique_ids_list_file, subs_links_file, movies_with_subs_list_file)
 
 
 if __name__ == "__main__":

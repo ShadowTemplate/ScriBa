@@ -36,11 +36,11 @@ def main(lines_to_skip):
                     no_match_file.write('{0}'.format(line))
                     no_match_num += 1
                 elif matches == 1:
-                    matched_file.write('{0}:{1}\n'.format(netflix_id, result[0].get('id')))
+                    matched_file.write('{0},{1}'.format(result[0].get('id'), line))
                     matched_num += 1
                 else:
-                    conflicting_ids = ','.join([movie.get('id') for movie in result])
-                    conflict_file.write('{0}:{1}:{2}\n'.format(netflix_id, conflicting_ids, title))
+                    conflicting_ids = '/'.join([movie.get('id') for movie in result])
+                    conflict_file.write('{0},{1}'.format(conflicting_ids, line))
                     conflict_num += 1
 
                 print('Processed: {0}'.format(line))
