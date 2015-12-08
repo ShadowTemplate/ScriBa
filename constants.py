@@ -5,8 +5,8 @@ OS_DEFAULT_LANGUAGE = 'eng'
 
 IMDB_HOME_URL = 'http://imdb.com'
 
-IMDB_MATCHED = 'data/imdb/matched.txt'
-IMDB_UNIQUE_MATCHED = 'data/imdb/clean_matched.txt'
+IMDB_MATCHED = 'data/imdb/match.txt'
+IMDB_UNIQUE_MATCHED = 'data/imdb/match-unique.txt'
 IMDB_PLOTS_SYNOPSES = 'data/imdb/plots-synopses/'
 OS_SUBS_LIST = 'data/os/subs_list.txt'
 OS_SUBS_PATH = 'data/os/subs/'

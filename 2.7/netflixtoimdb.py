@@ -49,8 +49,11 @@ def convert_netflix_to_imdb_ids(netflix_file, matched_file, no_match_file, confl
 
 
 def main():
-    convert_netflix_to_imdb_ids('data/netflix/movie_titles.txt', 'data/imdb/matched.txt', 'data/imdb/nomatch.txt',
-                                'data/imdb/conflict.txt')
+    project_data_folder = '/home/gianvito/PycharmProjects/ScriBa/'
+    convert_netflix_to_imdb_ids(project_data_folder + 'data/netflix/movie_titles.txt',
+                                project_data_folder + 'data/imdb/match.txt',
+                                project_data_folder + 'data/imdb/no-match.txt',
+                                project_data_folder + 'data/imdb/conflict.txt')
 
 
 if __name__ == "__main__":
