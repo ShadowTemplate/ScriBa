@@ -6,6 +6,12 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
 
 
+#  http://stackoverflow.com/questions/12118720/python-tf-idf-cosine-to-find-document-similarity
+#  http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html#sklearn.feature_extraction.text.TfidfVectorizer.get_feature_names
+#  http://blog.christianperone.com/2013/09/machine-learning-cosine-similarity-for-vector-space-models-part-iii/
+
+
+
 # os_client = OpenSubtitles()
 # user_agent = 'ScriBa v1.0'
 # imdb_ids = ['172495', '113497', '468569']

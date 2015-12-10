@@ -4,7 +4,6 @@ import base64
 import urllib.request
 
 import constants
-
 from opensubtitles import OpenSubtitles
 
 
@@ -52,8 +51,10 @@ def find_best_movie_subtitles(movie_subs):
     sorted_data = sorted(filter(lambda sub: sub['SubFormat'] == 'srt', movie_subs), key=lambda k: k['SubSumCD'])
     # subtitles from the same CD-set have same IDSubtitle but different IDSubtitleFile (sequential)
     best_sub_id = sorted_data[0]['IDSubtitle']  # take the IDSubtitle of the subtitle with the lowest SubSumCD
-    best_subs = [{'IDSubtitleFile': sub['IDSubtitleFile'], 'SubDownloadLink': sub['SubDownloadLink'],
-                  'IDMovieImdb': sub['IDMovieImdb']} for sub in sorted_data if sub['IDSubtitle'] == best_sub_id]
+    best_subs = [{'IDSubtitleFile': sub['IDSubtitleFile'],
+                  'SubDownloadLink': sub['SubDownloadLink'],
+                  'IDMovieImdb': sub['IDMovieImdb']}
+                 for sub in sorted_data if sub['IDSubtitle'] == best_sub_id]
     if len(best_subs) != int(sorted_data[0]['SubSumCD']):
         print('Error while retrieving optimal subs for film {0}'.format(sorted_data[0]['IDMovieImdb']))
         return None

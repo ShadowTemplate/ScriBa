@@ -37,8 +37,7 @@ def find_matching_subs(os_client, request_ids, lang, subs_links_f, movies_with_s
         subs_by_movie[movie.get('IDMovieImdb')].append(movie)  # group subtitles by movie
 
     report = ', '.join(['\'{0}\': {1}'.format(k, len(v)) for k, v in subs_by_movie.items()])
-    print('Found {0} result(s): [{1}]'.format(sum(list(map(lambda x: len(x), subs_by_movie.values()))), report))
-
+    print('Found {0} result(s): [{1}]'.format(sum([len(x) for x in subs_by_movie.values()]), report))
     print('Going to search and store the best subs for each movie...')
     best_subs_by_movie = [find_best_movie_subtitles(available_subs) for available_subs in subs_by_movie.values()]
 
@@ -69,10 +68,8 @@ def deduplicate_lines_by_id(ids_list_file, unique_ids_list_file):
 
 
 def main():
-    ids_list_file, unique_ids_list_file = constants.IMDB_MATCHED, constants.IMDB_UNIQUE_MATCHED
-    deduplicate_lines_by_id(ids_list_file, unique_ids_list_file)
-    subs_links_file, movies_with_subs_list_file = constants.OS_SUBS_LIST, constants.OS_IDS_LIST
-    find_subs_links_from_ids_list(unique_ids_list_file, subs_links_file, movies_with_subs_list_file)
+    deduplicate_lines_by_id(constants.IMDB_MATCHED, constants.IMDB_UNIQUE_MATCHED)
+    find_subs_links_from_ids_list(constants.IMDB_UNIQUE_MATCHED, constants.OS_SUBS_LIST, constants.OS_IDS_LIST)
 
 
 if __name__ == "__main__":
