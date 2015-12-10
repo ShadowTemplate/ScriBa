@@ -14,14 +14,15 @@ def get_id_from_title(imdb, title, year):
     return same_year_movies
 
 
-def convert_netflix_to_imdb_ids(netflix_file, matched_file, no_match_file, conflict_file, lines_to_skip=0):
+def convert_netflix_to_imdb_ids(netflix_file, matched_file, no_match_file, conflict_file, lines_to_skip=0,
+                                max_retries_per_link=0):
     imdb_client = IMDb()
     with open(netflix_file, 'r') as netflix_f, open(matched_file, 'a') as matched_f, \
             open(no_match_file, 'a') as no_match_f, open(conflict_file, 'a') as conflict_f:
         lines_processed, error_lines, matched_num, no_match_num, conflict_num = [0, 0, 0, 0, 0]
         try:
             for line in (l.rstrip('\r\n') for i, l in dropwhile(lambda x: x[0] < lines_to_skip, enumerate(netflix_f))):
-                for _ in range(10):
+                for attempt_num in range(max_retries_per_link):
                     try:
                         year, title = int(line.split(',')[1]), ','.join(line.split(',')[2:])
                         result = get_id_from_title(imdb_client, title, year)
@@ -43,8 +44,11 @@ def convert_netflix_to_imdb_ids(netflix_file, matched_file, no_match_file, confl
                         error_lines += 1
                         break
                     except Exception as e:
-                        time.sleep(5)  # e.args[0]['exception type']
                         print('Error at line {0}: {1}{2}'.format(lines_to_skip + lines_processed + 1, line, e))
+                        time.sleep(5)
+                        if attempt_num + 1 == max_retries_per_link:
+                            raise e
+                        print('Going to retry the operation...')
         except Exception as e:
             print('Error at line {0}: {1}'.format(lines_to_skip + lines_processed + 1, e))
 

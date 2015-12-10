@@ -2,6 +2,7 @@ import concurrent
 import concurrent.futures
 import itertools
 import os
+import time
 
 import constants
 import utils
@@ -27,20 +28,29 @@ def download_subs_from_list(subs_list_file, out_path, lines_to_skip=0, max_worke
     return successes, errors
 
 
-def process_links(movie_folder, links):
+def process_links(movie_folder, links, max_retries_per_link=50):
     os.makedirs(movie_folder, exist_ok=True)
     decompressed_files = []
     for link in links:
         print('Downloading and decompressing: {0}'.format(link))
-        sub_file_name = movie_folder + '/' + link.split('/')[-1].replace('.gz', '')
+        sub_file_name = movie_folder + '/' + link.split('/')[-1].replace('.gz', '.srt')
         with open(sub_file_name, 'wb') as out_file:
-            out_file.write(utils.decompress_gzip(utils.download_file_from_url(link)))
+            for attempt_num in range(max_retries_per_link):
+                try:
+                    out_file.write(utils.decompress_gzip(utils.download_file_from_url(link)))
+                    break
+                except Exception as exc:
+                    print('An error occurred while processing subtitle {0}: {1}'.format(sub_file_name, exc))
+                    time.sleep(5)
+                    if attempt_num + 1 == max_retries_per_link:
+                        raise exc
+                    print('Going to retry link {0}...'.format(link))
         decompressed_files.append(sub_file_name)
     return decompressed_files
 
 
 def main():
-    successes, errors = download_subs_from_list(constants.OS_SUBS_LIST, constants.OS_SUBS_PATH, max_workers=14)
+    successes, errors = download_subs_from_list(constants.OS_SUBS_LIST, constants.OS_SUBS_PATH, max_workers=3)
     print('Successes:\n{0}\n\nErrors:\n{1}'.format(successes, errors))
 
 

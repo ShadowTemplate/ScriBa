@@ -49,6 +49,10 @@ def decompress_gzip(data):
 def find_best_movie_subtitles(movie_subs):
     # filter list to keep just srt subtitles and then sort them by SubSumCD value
     sorted_data = sorted(filter(lambda sub: sub['SubFormat'] == 'srt', movie_subs), key=lambda k: k['SubSumCD'])
+
+    if not sorted_data:  # no srt sub found
+        return None
+
     # subtitles from the same CD-set have same IDSubtitle but different IDSubtitleFile (sequential)
     best_sub_id = sorted_data[0]['IDSubtitle']  # take the IDSubtitle of the subtitle with the lowest SubSumCD
     best_subs = [{'IDSubtitleFile': sub['IDSubtitleFile'],
