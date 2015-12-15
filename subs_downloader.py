@@ -28,23 +28,27 @@ def download_subs_from_list(subs_list_file, out_path, lines_to_skip=0, max_worke
     return successes, errors
 
 
-def process_links(movie_folder, links, max_retries_per_link=50):
+def process_links(movie_folder, links, max_retries_per_link=10):
     os.makedirs(movie_folder, exist_ok=True)
     decompressed_files = []
     for link in links:
         print('Downloading and decompressing: {0}'.format(link))
         sub_file_name = movie_folder + '/' + link.split('/')[-1].replace('.gz', '.srt')
-        with open(sub_file_name, 'wb') as out_file:
-            for attempt_num in range(max_retries_per_link):
-                try:
-                    out_file.write(utils.decompress_gzip(utils.download_file_from_url(link)))
-                    break
-                except Exception as exc:
-                    print('An error occurred while processing subtitle {0}: {1}'.format(sub_file_name, exc))
-                    time.sleep(5)
-                    if attempt_num + 1 == max_retries_per_link:
-                        raise exc
-                    print('Going to retry link {0}...'.format(link))
+        sub_data = None
+        for attempt_num in range(max_retries_per_link):
+            try:
+                sub_data = utils.download_file_from_url(link)
+                break
+            except Exception as exc:
+                print('An error occurred while processing subtitle {0}: {1}'.format(sub_file_name, exc))
+                time.sleep(5)
+                if attempt_num + 1 == max_retries_per_link:
+                    raise exc
+                print('Going to retry link {0}...'.format(link))
+        if sub_data:
+            with open(sub_file_name, 'wb') as out_file:
+                out_file.write(utils.decompress_gzip(sub_data))
+
         decompressed_files.append(sub_file_name)
     return decompressed_files
 
