@@ -35,9 +35,13 @@ def get_sub_from_encoded_data(encoded_data):
     return decompress_gzip(base64.b64decode(encoded_data))
 
 
-def download_file_from_url(url):
-    with urllib.request.urlopen(url) as response:
+def download_file_from_url(url, lib=urllib.request):
+    with lib.urlopen(url) as response:
         return response.read()
+
+
+def get_external_ip(lib=urllib.request):
+    return lib.urlopen("http://checkip.amazonaws.com/").read().decode('ascii').rstrip('\r\n')
 
 
 def decompress_gzip(data):

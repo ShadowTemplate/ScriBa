@@ -23,7 +23,7 @@ def merge_subs(subs_folder):
 
 
 def main():
-    merge_subs(constants.OS_SUBS_PATH)
+    merge_subs(constants.OS_SUBS_PATH_MERGED)
 
 if __name__ == '__main__':
     main()
