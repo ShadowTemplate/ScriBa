@@ -15,10 +15,10 @@ def build_movies_docs(ids_list_file, sub_folder, plots_folder):
 
 
 def build_movie_doc(m_id, sub_folder, plots_folder):
-    with open(sub_folder + m_id + '.txt', 'r') as script_f:
+    with open(sub_folder + m_id + '.txt', 'r', encoding='ISO-8859-1') as script_f:
         content = script_f.read()
     if os.path.exists(plots_folder + m_id + '.txt'):
-        with open(plots_folder + m_id + '.txt', 'r') as plots_f:
+        with open(plots_folder + m_id + '.txt', 'r', encoding='ISO-8859-1') as plots_f:
             content += plots_f.read()
     return content
 
