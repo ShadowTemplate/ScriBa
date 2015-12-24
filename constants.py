@@ -13,6 +13,8 @@ OS_SUBS_PATH = 'data/os/subs/'
 OS_SUBS_PATH_MERGED = 'data/os/subs_merged/'
 OS_IDS_LIST = 'data/os/ids_list.txt'
 
+REC_SYS_PATH = 'data/recsys/'
+
 TOR_PORT = 9051
 TOR_PASSWORD = "password"
 TOR_REFRESH_TIMEOUT = 11
