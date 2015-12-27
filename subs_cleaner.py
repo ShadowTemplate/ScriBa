@@ -1,6 +1,9 @@
 import itertools
 import os
 import glob
+import re
+
+from bs4 import BeautifulSoup
 
 import constants
 import utils
@@ -20,7 +23,11 @@ def merge_subs(subs_folder, subs_folder_merged):
                             for _ in itertools.repeat(None, 2):
                                 in_file.readline()
                         else:
-                            out.write(line + ' ')
+                            if re.search('<(.*?)>', line):
+                                bs = BeautifulSoup(line, 'lxml')
+                                out.write(bs.get_text() + ' ')
+                            else:
+                                out.write(line + ' ')
 
 
 def main():
@@ -28,5 +35,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
