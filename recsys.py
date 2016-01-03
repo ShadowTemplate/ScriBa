@@ -212,7 +212,7 @@ def main():
         print('Map built')
 
     algorithms = [group_lens, shw, most_similar]
-    test_set = load_test_set(constants.SMALL_NETFLIX_TEST_SET)
+    test_set = load_test_set(constants.NETFLIX_TEST_SET)
     for algorithm in algorithms:
         run_algorithm(algorithm, test_set, constants.REC_SYS_OUTPUT_PATH, constants.REC_SYS_RATINGS_BY_MOVIE,
                       constants.REC_SYS_RATINGS_BY_USER)
