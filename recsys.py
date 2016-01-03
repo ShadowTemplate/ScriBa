@@ -8,6 +8,62 @@ from sklearn.metrics.pairwise import linear_kernel
 import constants
 
 
+class Cache(object):
+    def __init__(self, user_ratings, movie_ratings):
+        self.user_ratings = user_ratings
+        self.movie_ratings = movie_ratings
+
+    def get_user_ratings(self, user, movie_to_skip=None):
+        if user not in self.user_ratings:
+            ratings = {}
+            with open(constants.REC_SYS_RATINGS_BY_USER + user + '.txt', 'r') as movie_f:
+                for line in filter(lambda l: l is not '', map(lambda l: l.rstrip('\r\n'), movie_f)):
+                    movie, rating = line.split(',')
+                    ratings[movie] = int(rating)
+            self.user_ratings[user] = ratings
+        return {movie: r for movie, r in self.user_ratings[user].items() if not movie_to_skip or movie_to_skip != movie}
+
+    def get_movie_ratings(self, movie, user_to_skip=None):
+        if movie not in self.movie_ratings:
+            ratings = {}
+            with open(constants.REC_SYS_RATINGS_BY_MOVIE + movie + '.txt', 'r') as movie_f:
+                for line in filter(lambda l: l is not '', map(lambda l: l.rstrip('\r\n'), movie_f)):
+                    user, rating = line.split(',')
+                    ratings[user] = int(rating)
+            self.movie_ratings[movie] = ratings
+        return {user: r for user, r in self.movie_ratings[movie].items() if not user_to_skip or user_to_skip != user}
+
+    def get_user_rating_for_movie(self, user, movie):
+        return self.get_user_ratings(user)[movie]
+
+    def get_user_avg_score(self, user):
+        ratings = self.get_user_ratings(user)
+        return sum(ratings.values()) / len(ratings) if len(ratings) else 0
+
+    def get_user_relative_avg_score(self, user, relative, movie_to_skip=None):
+        user_ratings = self.get_user_ratings(user, movie_to_skip=movie_to_skip)
+        relative_ratings = self.get_user_ratings(relative, movie_to_skip=movie_to_skip)
+        counter, items = 0, 0
+        for movie, rating in user_ratings.items():
+            if movie in relative_ratings:
+                items += 1
+                counter += user_ratings[movie]
+        average = counter / items if items else 0
+        return average
+
+    def get_cos_similarity(self, user1, user2, movie_to_skip=None):
+        user1_ratings = self.get_user_ratings(user1, movie_to_skip=movie_to_skip)
+        user2_ratings = self.get_user_ratings(user2, movie_to_skip=movie_to_skip)
+        numerator, norm1, norm2 = 0, 0, 0
+        for movie, rating in user1_ratings.items():
+            if movie in user2_ratings:
+                numerator += user1_ratings[movie] * user2_ratings[movie]
+                norm1 += user1_ratings[movie] ** 2
+                norm2 += user2_ratings[movie] ** 2
+        similarity = numerator / (sqrt(norm1) * sqrt(norm2)) if norm1 + norm2 > 0 else 0
+        return similarity
+
+
 def group_netflix_ratings_by_user():
     for movie in glob.glob(constants.NETFLIX_FULL_RATINGS_DATASET_PATH + '/*.txt'):
         with open(movie, 'r', encoding='ISO-8859-1') as in_file:
@@ -29,119 +85,44 @@ def group_netflix_ratings_by_movie():
                     movie_f.write('{0},{1}\n'.format(user, int(rating)))
 
 
-def get_user_ratings(ratings_by_user_path, user, movie_to_skip=None):
-    ratings = {}
-    with open(ratings_by_user_path + user + '.txt', 'r') as movie_f:
-        for line in filter(lambda l: l is not '', map(lambda l: l.rstrip('\r\n'), movie_f)):
-            movie, rating = line.split(',')
-            if not movie_to_skip or movie_to_skip != movie:
-                ratings[movie] = int(rating)
-    return ratings
-
-
-def get_movie_ratings(ratings_by_movie_path, movie, user_to_skip=None):
-    ratings = []
-    with open(ratings_by_movie_path + movie + '.txt', 'r') as movie_f:
-        for line in filter(lambda l: l is not '', map(lambda l: l.rstrip('\r\n'), movie_f)):
-            user, rating = line.split(',')
-            if not user_to_skip or user_to_skip != user:
-                ratings.append((user, int(rating)))
-    return ratings
-
-
-def get_user_rating_for_movie(ratings_by_user_path, user, movie):
-    with open(ratings_by_user_path + user + '.txt', 'r') as user_f:
-        for line in filter(lambda l: l is not '', map(lambda l: l.rstrip('\r\n'), user_f)):
-            m, rating = line.split(',')
-            if m == movie:
-                return int(rating)
-
-
-def get_user_avg_score(ratings_by_user_path, user, cache=None):
-    if cache and user in cache:
-        return cache[user]
-
-    ratings = get_user_ratings(ratings_by_user_path, user)
-    average = sum(ratings.values()) / len(ratings) if len(ratings) else 0
-    cache[user] = average
-    return average
-
-
-def get_user_relative_avg_score(ratings_by_user_path, user, relative, movie_to_skip=None, cache=None):
-    if cache and user + '.' + relative in cache:
-        return cache[user + '.' + relative]
-
-    user_ratings = get_user_ratings(ratings_by_user_path, user, movie_to_skip=movie_to_skip)
-    relative_ratings = get_user_ratings(ratings_by_user_path, relative, movie_to_skip=movie_to_skip)
-    counter, items = 0, 0
-    for movie, rating in user_ratings.items():
-        if movie in relative_ratings:
-            items += 1
-            counter += user_ratings[movie]
-    average = counter / items if items else 0
-    cache[user + '.' + relative] = average
-    return average
-
-
-def get_cos_similarity(user1, user2, ratings_by_user_path, movie_to_skip=None, cache=None):
-    key = '-'.join(sorted([user1, user2]))
-    if cache and key in cache:
-        return cache[key]
-
-    user1_ratings = get_user_ratings(ratings_by_user_path, user1, movie_to_skip=movie_to_skip)
-    user2_ratings = get_user_ratings(ratings_by_user_path, user2, movie_to_skip=movie_to_skip)
-    numerator, norm1, norm2 = 0, 0, 0
-    for movie, rating in user1_ratings.items():
-        if movie in user2_ratings:
-            numerator += user1_ratings[movie] * user2_ratings[movie]
-            norm1 += user1_ratings[movie] ** 2
-            norm2 += user2_ratings[movie] ** 2
-    similarity = numerator / (sqrt(norm1) * sqrt(norm2)) if norm1 + norm2 > 0 else 0
-    cache[key] = similarity
-    return similarity
-
-
-def group_lens(output_f, error_f, test_set):
-    users_similarities, users_avg_scores = {}, {}
+def group_lens(output_f, error_f, test_set, cache):
     for movie, user in test_set:
-        user_avg_score = get_user_avg_score(constants.REC_SYS_RATINGS_BY_USER, user, cache=users_avg_scores)
-        movie_ratings = get_movie_ratings(constants.REC_SYS_RATINGS_BY_MOVIE, movie, user_to_skip=user)
+        user_avg_score = cache.get_user_avg_score(user)
+        movie_ratings = cache.get_movie_ratings(movie, user_to_skip=user)
         scores_sum, similarities_sum = 0, 0
-        for corater, vote in movie_ratings:
-            cos_similarity = get_cos_similarity(user, corater, constants.REC_SYS_RATINGS_BY_USER,
-                                                movie_to_skip=movie, cache=users_similarities)
-            corater_avg_score = get_user_avg_score(constants.REC_SYS_RATINGS_BY_USER, corater,
-                                                   cache=users_avg_scores)
+        for corater, vote in movie_ratings.items():
+            cos_similarity = cache.get_cos_similarity(user, corater, movie_to_skip=movie)
+            corater_avg_score = cache.get_user_avg_score(corater)
             scores_sum += (vote - corater_avg_score) * cos_similarity
             similarities_sum += abs(cos_similarity)
         if similarities_sum:
             predicted_vote = user_avg_score + scores_sum / similarities_sum
+            print('{0},{1},{2}'.format(movie, user, round(predicted_vote)))
             output_f.write('{0},{1},{2}\n'.format(movie, user, round(predicted_vote)))
         else:
+            print('ERR: {0},{1}'.format(movie, user))
             error_f.write('{0},{1}\n'.format(movie, user))
 
 
-def shw(output_f, error_f, test_set):
-    users_similarities, users_avg_scores, users_relative_avg_scores = {}, {}, {}
+def shw(output_f, error_f, test_set, cache):
     for movie, user in test_set:
-        movie_ratings = get_movie_ratings(constants.REC_SYS_RATINGS_BY_MOVIE, movie, user_to_skip=user)
+        movie_ratings = cache.get_movie_ratings(movie, user_to_skip=user)
         num1, num2, norm = 0, 0, 0
-        for corater, vote in movie_ratings:
-            cos_similarity = get_cos_similarity(user, corater, constants.REC_SYS_RATINGS_BY_USER,
-                                                movie_to_skip=movie, cache=users_similarities)
-            num1 += abs(cos_similarity) * get_user_relative_avg_score(constants.REC_SYS_RATINGS_BY_USER, user,
-                                                                      corater, cache=users_relative_avg_scores)
+        for corater, vote in movie_ratings.items():
+            cos_similarity = cache.get_cos_similarity(user, corater, movie_to_skip=movie)
+            num1 += abs(cos_similarity) * cache.get_user_relative_avg_score(user, corater)
             norm += abs(cos_similarity)
-            num2 += cos_similarity * (vote - get_user_relative_avg_score(constants.REC_SYS_RATINGS_BY_USER, corater,
-                                                                         user, cache=users_relative_avg_scores))
+            num2 += cos_similarity * (vote - cache.get_user_relative_avg_score(corater, user))
         if norm:
             predicted_vote = num1 / norm + num2 / norm
+            print('{0},{1},{2}'.format(movie, user, round(predicted_vote)))
             output_f.write('{0},{1},{2}\n'.format(movie, user, round(predicted_vote)))
         else:
+            print('ERR: {0},{1}'.format(movie, user))
             error_f.write('{0},{1}\n'.format(movie, user))
 
 
-def most_similar(output_f, error_f, test_set):
+def most_similar(output_f, error_f, test_set, cache):
     k_max = 5
     data = build_tfidf_matrix()
     movies_similarities = {}
@@ -151,15 +132,17 @@ def most_similar(output_f, error_f, test_set):
 
     for movie, user in test_set:
         if movie in data.movies_num_map:
-            user_ratings = get_user_ratings(constants.REC_SYS_RATINGS_BY_USER, user, movie_to_skip=movie)
+            user_ratings = cache.get_user_ratings(user, movie_to_skip=movie)
             most_similar_vote = None
             for m_id, _ in movies_similarities[movie]:
                 if m_id in user_ratings:
                     most_similar_vote = user_ratings[m_id]
                     break
             if most_similar_vote:
+                print('{0},{1},{2}'.format(movie, user, most_similar_vote))
                 output_f.write('{0},{1},{2}\n'.format(movie, user, most_similar_vote))
         else:
+            print('ERR: {0},{1}'.format(movie, user))
             error_f.write('{0},{1}\n'.format(movie, user))
 
 
@@ -176,27 +159,27 @@ def load_test_set():
     return test_set
 
 
-def compute_rmse(predictions_f, rmse_f):
+def compute_rmse(predictions_f, rmse_f, cache):
     counter, sum_squared_values = 0, 0
     for line in filter(lambda l: l is not '', map(lambda l: l.rstrip('\r\n'), predictions_f)):
         movie, user, prediction = line.split(',')
-        delta = get_user_rating_for_movie(constants.REC_SYS_RATINGS_BY_USER, user, movie) - int(prediction)
+        delta = cache.get_user_rating_for_movie(user, movie) - int(prediction)
         counter += 1
         sum_squared_values += delta * delta
     rmse_f.write(str(sqrt(sum_squared_values / counter) if counter else 0))
 
 
-def run_algorithm(algorithm_function, test_set):
+def run_algorithm(algorithm_function, test_set, cache):
     os.makedirs(constants.REC_SYS_OUTPUT_PATH, exist_ok=True)
     algorithm_name = algorithm_function.__name__
     print('Running algorithm: {0}'.format(algorithm_name))
     prefix = constants.REC_SYS_OUTPUT_PATH + algorithm_name
     output_file = prefix + '.res.txt'
     with open(output_file, 'w') as output_f, open(prefix + '.err.txt', 'w') as error_f:
-        algorithm_function(output_f, error_f, test_set)
+        algorithm_function(output_f, error_f, test_set, cache)
     print('Computing RMSE for algorithm: {0}'.format(algorithm_name))
     with open(output_file, 'r') as predictions_f, open(prefix + '.rmse.txt', 'w') as rmse_f:
-        compute_rmse(predictions_f, rmse_f)
+        compute_rmse(predictions_f, rmse_f, cache)
 
 
 def main():
@@ -212,10 +195,11 @@ def main():
         group_netflix_ratings_by_movie()
         print('Map built')
 
-    algorithms = [most_similar]
+    algorithms = [group_lens, shw, most_similar]
     test_set = load_test_set()
+    cache = Cache({}, {})
     for algorithm in algorithms:
-        run_algorithm(algorithm, test_set)
+        run_algorithm(algorithm, test_set, cache)
 
 
 ########################################################################################################################
