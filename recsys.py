@@ -223,6 +223,35 @@ def run_algorithm(algorithm_function, test_set, cache):
 
 
 def main():
+    if not os.path.exists(constants.REC_SYS_RATINGS_BY_USER):
+        os.makedirs(constants.REC_SYS_RATINGS_BY_USER, exist_ok=True)
+        print('Building ratings_by_user map...')
+        group_netflix_ratings_by_user()
+        print('Map built')
+
+    if not os.path.exists(constants.REC_SYS_RATINGS_BY_MOVIE):
+        os.makedirs(constants.REC_SYS_RATINGS_BY_MOVIE, exist_ok=True)
+        print('Building ratings_by_movie map...')
+        group_netflix_ratings_by_movie()
+        print('Map built')
+
+    # generate_recent_test_set(2000, 2008)
+    algorithms = [most_similar]
+    test_set = load_test_set(constants.RECENT_TEST_SET)
+    cache = Cache({}, {})
+    for algorithm in algorithms:
+        run_algorithm(algorithm, test_set, cache)
+
+
+class TfidfMatrix(object):
+    def __init__(self, documents, movies_ids_list, movies_num_map, tfidf):
+        self.documents = documents
+        self.movies_ids_list = movies_ids_list
+        self.movies_num_map = movies_num_map
+        self.tfidf = tfidf
+
+
+def build_tfidf_matrix():
     documents = []
     movies_ids_list = []  # [imdb_id]
     movies_num_map = {}  # imdb_id, doc_num
@@ -309,4 +338,3 @@ def get_user_ratings_no_cache(user, movie_to_skip_id=None):
 
 if __name__ == '__main__':
     main()
-
