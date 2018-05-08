@@ -3,12 +3,12 @@
 A SCRIpt-BAsed recommender system for movies. SCRiBa computes the similarity 
 between movies according to their scripts. Each script is approximated with the
 english subtitles available on [OpenSubtitles](
-https://www.opensubtitles.org/) and bulk-downloadable with [Tor](
-https://www.torproject.org/).
+https://www.opensubtitles.org/) and downloadable without restrictions with 
+[Tor](https://www.torproject.org/).
 
 Please refer to the [report](report.pdf) and to the [notes](notes.txt) for 
-additional details on the algorithm, the evaluation on Netflix data and the 
-pre-processing steps.
+additional details on the algorithm, the pre-processing steps and the 
+evaluation on Netflix data.
 
 ---
 ## Information
