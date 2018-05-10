@@ -21,7 +21,7 @@ evaluation on Netflix data.
 
 **Development year(s)**: `2015-2016`
 
-**Authors**: [gcorsi](https://github.com/gcorsi), [ShadowTemplate](
+**Author(s)**: [gcorsi](https://github.com/gcorsi), [ShadowTemplate](
 https://github.com/ShadowTemplate)
 
 ---
